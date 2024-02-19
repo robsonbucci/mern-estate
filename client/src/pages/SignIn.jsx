@@ -1,17 +1,19 @@
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { useDispatch, useSelector } from 'react-redux';
+import { signInStart, signInSuccess, signInFail } from './../redux/user/userSlice';
 
 export default function SignIn() {
   const [formData, setFormData] = React.useState({});
-  const [errors, setErrors] = React.useState(null);
-  const [loading, setLoading] = React.useState(false);
+  const { error, loading } = useSelector(state => state.user);
   const navigate = useNavigate();
+  const dispatch = useDispatch();
 
   const handleChange = ({ target }) => setFormData({ ...formData, [target.id]: target.value });
   const handleSubmit = async e => {
     e.preventDefault();
-    setLoading(true);
     try {
+      dispatch(signInStart());
       const res = await fetch('/api/auth/signin', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -19,16 +21,13 @@ export default function SignIn() {
       });
       const data = await res.json();
       if (data.success === false) {
-        setErrors(data.message);
-        setLoading(false);
+        dispatch(signInFail(data.message));
         return;
       }
-      setLoading(false);
-      setErrors(null);
+      dispatch(signInSuccess(data));
       navigate('/');
     } catch (err) {
-      setLoading(false);
-      setErrors(err.message);
+      dispatch(signInFail(err.message));
     }
   };
   return (
@@ -51,7 +50,7 @@ export default function SignIn() {
           onChange={handleChange}
         />
 
-        {errors && <p className="text-red-500">{errors}</p>}
+        {error && <p className="text-red-500">{error}</p>}
 
         <button
           disabled={loading}
